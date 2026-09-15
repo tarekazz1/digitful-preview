@@ -30,7 +30,14 @@ for (const file of htmlFiles) {
   let html = fs.readFileSync(file, 'utf8');
 
   // Keep preview traffic out of the production GTM/GA measurement stream.
-  html = html.replace(/<script\b[^>]*>[\s\S]*?GTM-53THDCJH[\s\S]*?<\/script>/gi, '');
+  // Process one script block at a time so unrelated inline scripts (such as
+  // the theme switcher) are never removed simply because GTM appears later.
+  html = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, (scriptBlock) =>
+    scriptBlock.includes('GTM-53THDCJH') ? '' : scriptBlock
+  );
+  html = html.replace(/<noscript\b[^>]*>[\s\S]*?<\/noscript>/gi, (noscriptBlock) =>
+    noscriptBlock.includes('GTM-53THDCJH') ? '' : noscriptBlock
+  );
 
   if (!html.includes('name="robots"')) {
     html = html.replace('</head>', `  ${robotsMeta}\n</head>`);
