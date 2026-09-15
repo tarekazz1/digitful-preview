@@ -1,0 +1,71 @@
+name: Deploy Digitful Preview
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout preview configuration
+        uses: actions/checkout@v4
+
+      - name: Read source ref
+        id: source
+        shell: bash
+        run: echo "ref=$(tr -d '\r\n' < source-ref.txt)" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout Digitful source
+        uses: actions/checkout@v4
+        with:
+          repository: tarekazz1/digitful
+          ref: ${{ steps.source.outputs.ref }}
+          path: site
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: Install dependencies
+        working-directory: site
+        run: npm ci
+
+      - name: Build site
+        working-directory: site
+        run: npm run build
+
+      - name: Apply preview safeguards
+        run: node scripts/prepare-preview.mjs site/dist
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
