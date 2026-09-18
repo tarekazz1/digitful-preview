@@ -42,7 +42,8 @@ for (const file of htmlFiles) {
   let hasRobotsMeta = false;
   html = html.replace(/<meta\b[^>]*>/gi, (metaTag) => {
     const nameMatch = metaTag.match(/\bname\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/i);
-    if (nameMatch && (nameMatch[1] || nameMatch[2] || nameMatch[3]).toLowerCase() === 'robots') {
+    const nameValue = nameMatch?.[1] ?? nameMatch?.[2] ?? nameMatch?.[3];
+    if (nameValue?.toLowerCase() === 'robots') {
       const replacement = hasRobotsMeta ? '' : robotsMeta;
       hasRobotsMeta = true;
       return replacement;
