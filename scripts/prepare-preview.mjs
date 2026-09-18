@@ -39,7 +39,17 @@ for (const file of htmlFiles) {
     noscriptBlock.includes('GTM-53THDCJH') ? '' : noscriptBlock
   );
 
-  if (!html.includes('name="robots"')) {
+  let hasRobotsMeta = false;
+  html = html.replace(/<meta\b[^>]*>/gi, (metaTag) => {
+    const nameMatch = metaTag.match(/\bname\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/i);
+    if (nameMatch && (nameMatch[1] || nameMatch[2] || nameMatch[3]).toLowerCase() === 'robots') {
+      const replacement = hasRobotsMeta ? '' : robotsMeta;
+      hasRobotsMeta = true;
+      return replacement;
+    }
+    return metaTag;
+  });
+  if (!hasRobotsMeta) {
     html = html.replace('</head>', `  ${robotsMeta}\n</head>`);
   }
 
